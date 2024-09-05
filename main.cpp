@@ -59,7 +59,7 @@ std::vector<int> my_search(const std::vector<int> & A, const std::string & w) {
         if (s==w) {
             file_index>>x;
             matches.push_back(x);
-            if (matches.size()==25) {
+            if (matches.size()==25 || file_index.eof()) {
                 return matches;
             }
         }
@@ -92,8 +92,8 @@ int main(int argc, char *argv[])
         std::cout<<"Enter the word you want to search: ";
         std::cin>>search;
     }
-    auto search2=my_to_lower(search);
-    auto index_L=my_search(Array_index,search2);
+
+    auto index_L=my_search(Array_index,my_to_lower(search));
     if (index_L.empty()) {
         std::cout<<"The word is not found"<<std::endl;
     }else {
