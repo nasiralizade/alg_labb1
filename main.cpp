@@ -3,14 +3,17 @@
 #include <vector>
 #include <istream>
 
-int hash_value_(std::string wprefix) {
+int get_value(char c) {
+    return static_cast<unsigned char>(c);
+}
+int hash_value_(std::string &wprefix) {
     int n=wprefix.length();
     if (n>=3) {
-        return (wprefix[0]*900+wprefix[1]*30+wprefix[2])%27000;
+        return static_cast<unsigned char>(wprefix[0])*900+static_cast<unsigned char>(wprefix[1])*30+static_cast<unsigned char>(wprefix[2])%27000;
     }if (n==2) {
-        return (wprefix[0]*30+wprefix[1])%27000;
+        return (static_cast<unsigned char>(wprefix[0])*30+static_cast<unsigned char>(wprefix[1]))%27000;
     }if (n==1) {
-        return wprefix[0]%27000;
+        return get_value(wprefix[0])%27000;
     }
     return -1;
 }
@@ -71,17 +74,16 @@ std::vector<int> my_search(const std::vector<int> & A, const std::string & w) {
 
 std::string my_to_lower(const std::string & str) {
     std::string str2;
-    for (int i=0;i<str.size();i++) {
-        str2+=std::tolower(str[i]);
+    for (const char i : str) {
+        str2+=std::tolower(i);
     }
     return str2;
 }
 
 int main(int argc, char *argv[])
 {
-    std::ifstream file_L("org.txt");
-    std::string filename="text.txt";
-
+    std::ifstream file_L("corpus");
+    std::string filename="rawindex.txt";
 
     std::vector<int>A(30*30*30,-1);
     auto Array_index=buildArrayIndex(filename,A);
@@ -97,7 +99,7 @@ int main(int argc, char *argv[])
     if (index_L.empty()) {
         std::cout<<"The word is not found"<<std::endl;
     }else {
-        std::cout<<"Det finns "<<index_L.size()<<" fÃ¶rekomster av ordet."<<std::endl;
+        std::cout<<"Det finns "<<index_L.size()<<" förekomster av ordet."<<std::endl;
         for (int i=0;i<index_L.size();i++) {
             file_L.seekg(index_L[i]-30);
             for (int i=0; i<90;i++) {
@@ -110,6 +112,5 @@ int main(int argc, char *argv[])
 
         std::cout<<std::endl;
     }
-
     return 0;
 }
