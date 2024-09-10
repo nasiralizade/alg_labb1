@@ -12,8 +12,8 @@ static unsigned char u2l[256];
 void initialize() {
     unsigned char ch;
 
-    for (int i = 0; i < 256; i++)
-        u2l[i] = 0;
+    for (unsigned char & i : u2l)
+        i = 0;
 
     for (unsigned char *s = (unsigned char *) ALPHABET; *s; s++) {
         ch = *s + 'a' - 'A';
@@ -62,7 +62,6 @@ void initialize() {
 
 std::string to_lower(const std::string &str) {
     std::string result;
-    result.reserve(str.size());
     for (unsigned char c: str) {
         result += u2l[c] ? u2l[c] : c;
     }
@@ -84,89 +83,98 @@ int hash_value_(std::string &wprefix) {
     return -1;
 }
 
-std::vector<int> buildArrayIndex(const std::string &filename, std::vector<int> &A) {
-    std::ifstream file_index(filename);
-    if (!file_index) {
-        std::cerr << "Error: cannot open file " << filename << std::endl;
-        exit(1);
-    }
+std::vector<int> buildArrayIndex(std::ifstream &index_file, std::vector<int> &A) {
     std::string line, wprefix, temp;
     size_t index_i = 0;
-    while (getline(file_index, line)) {
+    while (getline(index_file, line)) {
         wprefix = line.substr(0, line.find(' '));
         if (wprefix != temp) {
             A[hash_value_(wprefix)] = index_i;
             temp = wprefix;
         }
-        index_i += line.size();
+        index_i += line.size()+1;
     }
+    index_file.clear();
     return A;
 }
 
-std::vector<int> my_search(const std::vector<int> &A, const std::string &w) {
+std::vector<int> my_search(const std::vector<int> &A,std::ifstream &index_file, const std::string &w) {
     std::vector<int> matches;
-    std::ifstream file_index("rawindex.txt");
     std::string wprefix = w.substr(0, 3);
     int i = A[hash_value_(wprefix)];
     int j = A[hash_value_(wprefix) + 1];
-    int m = 0;
+    if (i == -1) { return matches; }
+    int m ;
     std::string s;
     while (j - i > 1000) {
         m = (i + j) / 2;
-        file_index.seekg(m, std::ios::beg);
-        file_index >> s;
-        if (isdigit(s[0])) {
-            file_index >> s;
+        index_file.seekg(m);
+        index_file >> s;
+        if (!isalpha(s[0])) {
+            while (!isalpha(s[0])) {
+                m++;
+                index_file.seekg(m);
+                index_file >> s;
+            }
         }
-
         if (s < w) {
             i = m;
         } else {
             j = m;
         }
     }
-    if (i == -1) { return matches; }
-    file_index.seekg(i);
+    index_file.seekg(i);
     int x;
     while (true) {
-        file_index >> s;
+        index_file >> s;
         if (s == w) {
-            file_index >> x;
+            index_file >> x;
             matches.push_back(x);
-            if (matches.size() == 25 || file_index.eof()) {
+            if (matches.size() == 25 || index_file.eof()) {
                 return matches;
             }
         }
-        if (s > w) {
-            return matches;
+        else if (s > w) {
+            break;
         }
     }
+    return matches;
 }
 
+void store_time_search( std::chrono::duration<long long, std::ratio<1, 1000>>::rep rep, const std::string & search);
 
 int main(int argc, char *argv[]) {
     initialize();
     std::ifstream file_L("korpus.txt");
-    std::string filename = "rawindex.txt";
-
+    std::ifstream index_file ("rawindex.txt");
+    if(!file_L.is_open() || !index_file.is_open()) {
+        std::cerr << "Error: cannot open file " << std::endl;
+    }
     std::vector<int> A(30 * 30 * 30, -1);
-    auto Array_index = buildArrayIndex(filename, A);
+    auto Array_index = buildArrayIndex( index_file, A);
     std::string search;
     if (argc > 1) {
         search = argv[1];
     } else {
-        std::cout << "Enter the word you want to search: ";
+        std::cout << "Mata in ordet du vill söka efter: ";
         std::cin >> search;
     }
     auto start = std::chrono::high_resolution_clock::now();
-    auto index_L = my_search(Array_index, to_lower(search));
+    auto index_L = my_search(Array_index,index_file, to_lower(search));
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() <<
             " milliseconds" << std::endl;
     if (index_L.empty()) {
         std::cout << "The word is not found" << std::endl;
     } else {
-        std::cout << "Det finns " << index_L.size() << " förekomster av ordet." << std::endl;
+        std::cout << "Det finns " << index_L.size() << " förekomster av ordet. " << std::endl;
+        std::string print_out;
+        std::cout<<"Vill du skriva ut förekomsterna? (y/n): ";
+        std::cin>>print_out;
+        if (print_out != "y") {
+            return 0;
+        }
+        std::cout<<"---------------------------------------------------\n";
         int antal = 15;
         for (int i: index_L) {
             char before[antal], after[antal];
@@ -176,8 +184,20 @@ int main(int argc, char *argv[]) {
             file_L.read(after, antal);
             std::cout << "..." << before <<green<< search<<reset << after << "..." << std::endl;
         }
-
+        store_time_search(std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(),search);
         std::cout << std::endl;
     }
+    index_file.close();
+    file_L.close();
     return 0;
+}
+
+
+void store_time_search(std::chrono::duration<long long, std::ratio<1, 1000>>::rep rep, const std::string & search) {
+    std::ofstream file("time_search.txt", std::ios::app);
+    if (!file.is_open()) {
+        std::cerr << "Error: cannot open file " << std::endl;
+    }
+    file << search << "\t" << rep <<" ms\n";
+    file.close();
 }
