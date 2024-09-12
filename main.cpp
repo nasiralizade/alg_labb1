@@ -96,10 +96,6 @@ std::vector<int> buildArrayIndex(std::vector<int> &A, std::ifstream &index_file)
         if (wprefix != temp) {
             A[hash_value_(wprefix)] = index_i;
             temp = wprefix;
-            if (hash_value_(wprefix) == 1058) {
-                int x = 0;
-                std::cout << line << std::endl;
-            }
         }
 
         index_i += line.length() + 1;
@@ -117,7 +113,7 @@ std::vector<int> my_search(const std::vector<int> &A, std::ifstream &index_file,
     long long j = A[hash_value_(wprefix) + 1];
 
     if (i == -1) { return matches; }
-    // Get the file size
+
     index_file.seekg(0, std::ios::end);
     std::streampos file_size = index_file.tellg();
     if (j == -1 || j > file_size) {
@@ -127,12 +123,9 @@ std::vector<int> my_search(const std::vector<int> &A, std::ifstream &index_file,
     std::string s;
     while (j - i > 1000) {
         m = (i + j) / 2;
-        index_file.seekg(m);
+        index_file.seekg(m,std::ios::beg);
+        getline(index_file, s);
         index_file >> s;
-
-        if (!isalpha(s[0])) {
-            index_file >> s;
-        }
         if (s < w) {
             i = m;
         } else {
@@ -146,6 +139,7 @@ std::vector<int> my_search(const std::vector<int> &A, std::ifstream &index_file,
         if (matches.size() == 25 || index_file.eof()) {
             return matches;
         }
+        getline(index_file,s);
         index_file >> s;
         if (s == w) {
             index_file >> x;
@@ -166,13 +160,16 @@ int main(int argc, char *argv[]) {
     if (!file_L.is_open() || !index_file.is_open()) {
         std::cerr << "Error: cannot open file " << std::endl;
     }
-    auto Array_index = buildArrayIndex(A, index_file);
+
     std::string search;
+    auto Array_index = buildArrayIndex(A, index_file);
     if (argc > 1) {
         search = argv[1];
     } else {
         std::cout << "Mata in ordet du vill soka efter: ";
         std::cin >> search;
+        search = to_lower(search);
+    std::cout << hash_value_(search)<<" :"<<Array_index[hash_value_(search)] << std::endl;
     }
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     auto index_L = my_search(Array_index, index_file, to_lower(search));
@@ -185,7 +182,7 @@ int main(int argc, char *argv[]) {
     } else {
         std::cout << "Det finns " << index_L.size() << " forekomster av ordet. " << std::endl;
         std::string print_out;
-        std::cout << "Vill du skriva ut f?rekomsterna? (y/n): ";
+        std::cout << "Vill du skriva ut forekomsterna? (y/n): ";
         std::cin >> print_out;
         if (print_out != "y") {
             return 0;
