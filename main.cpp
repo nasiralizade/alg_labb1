@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <istream>
+#include <sstream>
 // Define the alphabet in Latin-1 order
 #define ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZÄÅÖ"
 #define green "\033[1;32m"
@@ -64,6 +65,7 @@ void initialize() {
 std::string to_lower(const std::string &str) {
     std::string result;
     for (unsigned char c: str) {
+        //result+= static_cast<unsigned char>(std::tolower(c));
         result += u2l[c] ? u2l[c] : c;
     }
     std::cout<<"searching for: "<<result<<std::endl;
@@ -113,17 +115,11 @@ std::vector<int> my_search(const std::vector<int> &A, std::ifstream &index_file,
     long long j = A[hash_value_(wprefix) + 1];
 
     if (i == -1) { return matches; }
-
-    index_file.seekg(0, std::ios::end);
-    std::streampos file_size = index_file.tellg();
-    if (j == -1 || j > file_size) {
-        j = file_size;
-    }
     long long m = 0;
     std::string s;
     while (j - i > 1000) {
         m = (i + j) / 2;
-        index_file.seekg(m,std::ios::beg);
+        index_file.seekg(m);
         getline(index_file, s);
         index_file >> s;
         if (s < w) {
@@ -136,17 +132,19 @@ std::vector<int> my_search(const std::vector<int> &A, std::ifstream &index_file,
     int x;
     std::string linee;
     while (true) {
-        if (matches.size() == 25 || index_file.eof()) {
+        if (index_file.peek()==EOF) {
             return matches;
         }
         getline(index_file,s);
-        index_file >> s;
+        std::istringstream iss(s);
+        iss >> s;
         if (s == w) {
-            index_file >> x;
+            iss >> x;
             matches.push_back(x);
-        } else if (s > w) {
+        } if (s > w ) {
             break;
         }
+
     }
     return matches;
 }
@@ -203,5 +201,6 @@ int main(int argc, char *argv[]) {
     }
     index_file.close();
     file_L.close();
+
     return 0;
 }
