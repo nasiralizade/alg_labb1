@@ -5,7 +5,7 @@
 #include <sstream>
 #include <vector>
 // Define the alphabet in Latin-1 order
-#define ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZƒ≈÷"
+#define ALPHABET "ABCDEFGHIJKLMNOPQRSTUVWXYZ√Ñ√Ö√ñ"
 #define green "\033[1;32m"
 #define reset "\033[0m"
 std::ifstream file_L("/afs/kth.se/misc/info/kurser/DD2350/adk24/labb1/korpus");
@@ -30,7 +30,7 @@ void initialize() {
         u2l[ch + 'A' - 'a'] = u2l[ch] = 'a';
 
     ch = 230; // ae to ?
-    u2l[ch + 'A' - 'a'] = u2l[ch] = '‰';
+    u2l[ch + 'A' - 'a'] = u2l[ch] = '√§';
 
     ch = 231; // c with cedilla to c
     u2l[ch + 'A' - 'a'] = u2l[ch] = 'c';
@@ -51,7 +51,7 @@ void initialize() {
         u2l[ch + 'A' - 'a'] = u2l[ch] = 'o';
 
     ch = 248; // o with stroke to ?
-    u2l[ch + 'A' - 'a'] = u2l[ch] = 'ˆ';
+    u2l[ch + 'A' - 'a'] = u2l[ch] = '√∂';
 
     for (ch = 249; ch <= 252; ++ch) // u with accent
         u2l[ch + 'A' - 'a'] = u2l[ch] = 'u';
@@ -82,12 +82,13 @@ void buildArrayIndex(std::ifstream &index_file);
 std::vector<int> my_search(std::ifstream &index_file, std::ifstream &inFile, const std::string &w);
 
 void my_print(const std::vector<int> &v, const std::string &w);
+// path till filerna i labbsalen
 // std::ifstream file_L("/afs/kth.se/misc/info/kurser/DD2350/adk24/labb1/korpus
 //std::ifstream index_file ("/afs/kth.se/misc/info/kurser/DD2350/adk24/labb1/rawindex.txt");
 int main(int argc, char *argv[]) {
 	initialize();
     std::ifstream index_file("/afs/kth.se/misc/info/kurser/DD2350/adk24/labb1/rawindex.txt");
-    //buildArrayIndex(index_file);
+    //buildArrayIndex(index_file); // k√∂r denna bara denna del f√∂r att skapa data.bin file utan search, annars k√∂r utan den
     //return 0;
     std::ifstream inFile("data.bin", std::ios::binary);
     if (!file_L.is_open() || !index_file.is_open() || !inFile.is_open()) {
@@ -100,12 +101,12 @@ int main(int argc, char *argv[]) {
         w = argv[1];
 
     } else {
-        std::cout << "Mata in ordet du vill sˆka efter: ";
+        std::cout << "Mata in ordet du vill s√∂ka efter: ";
         std::cin >> w;
     }
     w = to_lower(w);
     auto matches = my_search(index_file, inFile, w);
-    std::cout << "Antal fˆrekomster av ordet " << w << " ‰r: " << matches.size() << std::endl;
+    std::cout << "Antal f√∂rekomster av ordet " << w << " √§r: " << matches.size() << std::endl;
     my_print(matches, w);
     file_L.clear();
     return 0;
@@ -125,11 +126,11 @@ std::vector<int> my_search(std::ifstream &index_file, std::ifstream &inFile, con
     long long wp = hash_value_(wprefix);
 
     inFile.seekg(wp * 2 * sizeof(size_t));
-    if (!inFile.read(reinterpret_cast<char *>(&i), sizeof(i))) {
+    if (!inFile.read(reinterpret_cast<char *>(&i), sizeof(i))) { // l√§s in f√∂rsta position och spara i "i"
         std::cerr << "Error reading start index from data.bin at position " << wp * 2 * sizeof(size_t) << std::endl;
         return matches;
     }
-    if (!inFile.read(reinterpret_cast<char *>(&j), sizeof(j))) {
+    if (!inFile.read(reinterpret_cast<char *>(&j), sizeof(j))) { // n√§sta ord
         std::cerr << "Error reading end index from data.bin at position " << (wp * 2 * sizeof(size_t) + sizeof(size_t))
                   << std::endl;
         return matches;
@@ -196,8 +197,6 @@ void buildArrayIndex(std::ifstream &index_file) {
         }
         current_index += line.length() + 1;
     }
-
-    // Handle the last prefix: write its start and end indices.
     if (!previous_prefix.empty()) {
         outFile.seekp(hash_value_(previous_prefix) * 2 * sizeof(size_t));
         outFile.write(reinterpret_cast<const char *>(&start_index), sizeof(start_index));
